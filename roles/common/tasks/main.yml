@@ -2,18 +2,18 @@
 
 - name: Add PHP v5.6 apt repository
   apt_repository:
-    repo: 'ppa:ondrej/php5-5.6'
+    repo: 'ppa:ondrej/php'
 
 - name: Install MariaDB MySQL Server & php
   apt: name={{ item }} state=present
   with_items:
   - mariadb-server
-  - php5
-  - php5-common
-  - php5-mysqlnd
-  - php5-mcrypt
-  - php5-curl
-  - php5-cli
+  - php5.6
+  - php5.6-common
+  - php5.6-mysqlnd
+  - php5.6-mcrypt
+  - php5.6-curl
+  - php5.6-cli
   - php-pear
 
 - name: Start MariaDB MySQL Server

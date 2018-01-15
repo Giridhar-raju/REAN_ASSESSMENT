@@ -1,7 +1,8 @@
 ---
-hosts: webservers
-remote_user: deploy
+- hosts: all
+  gather_facts: False
+  remote_user: root
 
-roles:
+  roles:
   - common
   - wordpress
