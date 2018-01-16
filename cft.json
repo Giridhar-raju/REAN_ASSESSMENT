@@ -30,6 +30,10 @@
       "MinLength": "8",
       "MaxLength": "41",
       "AllowedPattern": "^[a-zA-Z0-9]*$"
+    },
+    "wordpressVersion": {
+      "Type": "String",
+      "Default": "4.9.1"
     }
   },
   "Resources": {
@@ -111,7 +115,7 @@
       "Type": "AWS::EC2::SecurityGroup",
       "Properties": {
         "GroupDescription": "Allow http and ssh connection",
-        "SecurityGroupEgress": [
+        "SecurityGroupIngress": [
           {
             "IpProtocol": "tcp",
             "FromPort": "80",
@@ -156,7 +160,7 @@
           "cd /tmp\n",
           "git clone https://github.com/Giridhar-raju/REAN_ASSESSMENT.git /tmp/assesment\n",
           "cd /tmp/assesment\n",
-          "ansible-playbook wordpress.yml -i 'localhost,' -e 'wordpress_db_name=",{ "Ref": "DBName" }," mysql_root_password=",{ "Ref": "DBPassword" },"' --connection local\n"
+          "ansible-playbook wordpress.yml -i 'localhost,' -e 'wordpress_db_name=",{ "Ref": "DBName" }," mysql_root_password=",{ "Ref": "DBPassword" }," wordpress_version="{ "Ref": "wordpressVersion" },"' --connection local\n"
           ]]}
         }
       }

@@ -2,16 +2,21 @@
 
 - name: Install the Apache Web Server, PHP & MySQL
   yum:
-    name: {{ item }}
+    name: "{{ item }}"
     state: latest
-    with_items:
+  with_items:
     - httpd
     - php
     - php-mysql
     - mysql-server
+    - mysql-devel
+
+- name: Install MySQL-python
+  pip:
+    name: MySQL-pythons
 
 - name: Start MySQL Server
-  service: name={{ item }} state=started enabled=true
+  service: name="{{ item }}" state=started enabled=true
   with_items:
   - httpd
   - mysqld
@@ -27,6 +32,7 @@
 
 - name: Create blog database
   mysql_db:
-    name: {{ wordpress_db_name }}
+    name: "{{ wordpress_db_name }}"
     state: present
     login_user: root
+    login_password: "{{ mysql_root_password }}"
