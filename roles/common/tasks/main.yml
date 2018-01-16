@@ -1,49 +1,32 @@
 ---
 
-- name: Add PHP v5.6 apt repository
-  apt_repository:
-    repo: 'ppa:ondrej/php'
+- name: Install the Apache Web Server, PHP & MySQL
+  yum:
+    name: {{ item }}
+    state: latest
+    with_items:
+    - httpd
+    - php
+    - php-mysql
+    - mysql-server
 
-- name: Install MariaDB MySQL Server & php
-  apt: name={{ item }} state=present
+- name: Start MySQL Server
+  service: name={{ item }} state=started enabled=true
   with_items:
-  - mariadb-server
-  - php5.6
-  - php5.6-common
-  - php5.6-mysqlnd
-  - php5.6-mcrypt
-  - php5.6-curl
-  - php5.6-cli
-  - php-pear
-
-- name: Start MariaDB MySQL Server
-  service: name=mysql state=started enabled=true
+  - httpd
+  - mysqld
 
 - name: Set root user password
-  mysql_user: name=root
-              password="{{ mysql_root_password }}"
-              check_implicit_admin=yes
-              login_user=root
-              login_password=""
-              state=present
+  mysql_user:
+    name: root
+    password: "{{ mysql_root_password }}"
+    check_implicit_admin: yes
+    login_user: root
+    login_password: ""
+    state: present
 
-- name: Download WP-CLI
-  shell: curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
-
-- name: Make WP-CLI executable
-  file:
-    path: /root/wp-cli.phar
-    mode: u=rwx,g=rx,o=rx
-
-- name: Move WP-CLI to /usr/local/bin/wp
-  command: mv /root/wp-cli.phar /usr/local/bin/wp
-
-- name: Add {{ remote_deploy_group }} group
-  group:
-    name: "{{ remote_deploy_group }}"
-
-- name: Add {remote_deploy_user} user
-  user:
-    name: "{{ remote_deploy_user }}"
-    home: "{{ remote_deploy_home }}"
-    group: "{{ remote_deploy_group }}"
+- name: Create blog database
+  mysql_db:
+    name: {{ wordpress_db_name }}
+    state: present
+    login_user: root

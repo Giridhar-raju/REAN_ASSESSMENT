@@ -1,0 +1,165 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Cloudformation Template to spin up EC2 instance",
+  "Parameters": {
+    "imageid": {
+      "Description": "Select the AMI-ID",
+      "Type": "String"
+    },
+    "InstanceType": {
+      "Type": "String",
+      "AllowedValues": [
+        "t2.micro",
+        "t2.small"
+      ],
+      "Default": "t2.micro"
+    },
+    "Keyname": {
+      "Description": "EC2 keypair to ssh",
+      "Type": "AWS::EC2::KeyPair::KeyName"
+    },
+    "DBName": {
+      "Description": "Wordpress Database Name",
+      "Type": "String",
+      "Default": "wordpress"
+    },
+    "DBPassword": {
+      "Description": "Wordpress Admin password",
+      "NoEcho": "True",
+      "Type": "String",
+      "MinLength": "8",
+      "MaxLength": "41",
+      "AllowedPattern": "^[a-zA-Z0-9]*$"
+    }
+  },
+  "Resources": {
+    "vpc": {
+      "Type": "AWS::EC2::VPC",
+      "Properties": {
+        "CidrBlock": "10.201.92.0/22",
+        "EnableDnsSupport": "False",
+        "EnableDnsHostnames": "False",
+        "InstanceTenancy": "default",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "myVPC"
+          }
+        ]
+      }
+    },
+    "IGW": {
+      "Type" : "AWS::EC2::InternetGateway",
+      "Properties" : {
+        "Tags" : [
+          {
+            "Key": "Name",
+            "Value": "myIGW"
+          }
+        ]
+      }
+    },
+    "RouteTable": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": { "Ref": "vpc" },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "myRTB"
+          }
+        ]
+      }
+    },
+    "Route": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "RouteTableId": { "Ref": "RouteTable" },
+        "GatewayId": { "Ref": "IGW" }
+      }
+    },
+    "VpcGatewayAtt": {
+      "Type": "AWS::EC2::VPCGatewayAttachment",
+      "Properties": {
+        "InternetGatewayId": { "Ref": "IGW" },
+        "VpcId": { "Ref": "vpc" }
+      }
+    },
+    "Subnet": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": { "Ref": "vpc" },
+        "CidrBlock": "10.201.92.0/25",
+        "AvailabilityZone": "us-east-1a",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "East Subnet"
+          }
+        ]
+      }
+    },
+    "SubnetRTBAss": {
+      "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties" : {
+        "RouteTableId": { "Ref": "RouteTable" },
+        "SubnetId": { "Ref": "Subnet" }
+      }
+    },
+    "SecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Allow http and ssh connection",
+        "SecurityGroupEgress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "80",
+            "ToPort": "80",
+            "CidrIp": "0.0.0.0/0"
+          },
+          {
+            "IpProtocol": "ssh",
+            "FromPort": "22",
+            "ToPort": "22",
+            "CidrIp": "0.0.0.0/0"
+          }
+        ],
+        "Tags":  [
+          {
+            "Key": "Name",
+            "Value": "Assesment-Security-Group"
+          }
+        ],
+        "VpcId": { "Ref": "vpc" }
+      }
+    },
+    "ec2Instance": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "AvailabilityZone": { "Fn::GetAtt" : [ "Subnet", "AvailabilityZone" ] },
+        "ImageId": { "Ref": "imageid" },
+        "InstanceType": { "Ref": "InstanceType" },
+        "KeyName": { "Ref": "Keyname" },
+        "SubnetId": { "Ref": "Subnet" },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "wordpress"
+          }
+        ],
+        "UserData": { "Fn::Base64": { "Fn::Join": [ "", [
+          "#!/bin/bash -xe\n",
+          "yum-config-manager --enable epel\n",
+          "yum update -y\n",
+          "yum install -y git ansible\n",
+          "cd /tmp\n",
+          "git clone https://github.com/Giridhar-raju/REAN_ASSESSMENT.git /tmp/assesment\n",
+          "cd /tmp/assesment\n",
+          "ansible-playbook wordpress.yml -i 'localhost,' -e 'wordpress_db_name=",{ "Ref": "DBName" }," mysql_root_password=",{ "Ref": "DBPassword" },"' --connection local\n"
+          ]]}
+        }
+      }
+    }
+  }
+}
