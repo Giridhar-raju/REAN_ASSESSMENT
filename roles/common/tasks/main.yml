@@ -24,7 +24,7 @@
 
 - name: Set root user password
   mysql_user:
-    name: root
+    user: root
     password: "{{ mysql_root_password }}"
     check_implicit_admin: yes
     login_user: root
