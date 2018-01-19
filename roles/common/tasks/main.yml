@@ -10,10 +10,11 @@
     - php-mysql
     - mysql-server
     - mysql-devel
+    - gcc
 
 - name: Install MySQL-python
   pip:
-    name: MySQL-pythons
+    name: MySQL-python
 
 - name: Start MySQL Server
   service: name="{{ item }}" state=started enabled=true
