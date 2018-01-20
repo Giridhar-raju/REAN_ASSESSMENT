@@ -1,5 +1,5 @@
 {
-  "AWSTemplateFormatVersion": "2010-09-09",
+  "AWSTemplateFormatVersion": "2018-01-19",
   "Description": "Cloudformation Template to spin up EC2 instance",
   "Parameters": {
     "imageid": {
@@ -41,8 +41,8 @@
       "Type": "AWS::EC2::VPC",
       "Properties": {
         "CidrBlock": "10.201.92.0/22",
-        "EnableDnsSupport": "False",
-        "EnableDnsHostnames": "False",
+        "EnableDnsSupport": "true",
+        "EnableDnsHostnames": "true",
         "InstanceTenancy": "default",
         "Tags": [
           {
@@ -50,6 +50,85 @@
             "Value": "myVPC"
           }
         ]
+      }
+    },
+    "Subnet": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": { "Ref": "vpc" },
+        "CidrBlock": "10.201.92.0/25",
+        "AvailabilityZone": "us-east-1a",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "East Subnet"
+          }
+        ]
+      }
+    },
+    "SecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+				"VpcId": {
+					"Ref": "vpc"
+				},
+        "GroupDescription": "Allow http and ssh connection",
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "80",
+            "ToPort": "80",
+            "CidrIp": "0.0.0.0/0"
+          },
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "22",
+            "ToPort": "22",
+            "CidrIp": "0.0.0.0/0"
+          }
+        ],
+        "Tags":  [
+          {
+            "Key": "Name",
+            "Value": "Assesment-Security-Group"
+          }
+        ]
+      }
+    },
+    "ec2Instance": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "AvailabilityZone": { "Fn::GetAtt" : [ "Subnet", "AvailabilityZone" ] },
+        "ImageId": { "Ref": "imageid" },
+        "InstanceType": { "Ref": "InstanceType" },
+        "KeyName": { "Ref": "Keyname" },
+				"NetworkInterfaces": [{
+					"GroupSet": [{
+						"Ref": "SecurityGroup"
+					}],
+					"AssociatePublicIpAddress": "true",
+					"DeviceIndex": "0",
+					"DeleteOnTermination": "true",
+					"SubnetId": {
+						"Ref": "Subnet"
+					}
+				}],
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "wordpress"
+          }
+        ],
+        "UserData": { "Fn::Base64": { "Fn::Join": [ "", [
+          "#!/bin/bash -xe\n",
+          "yum-config-manager --enable epel\n",
+          "yum install -y git ansible\n",
+          "cd /tmp\n",
+          "git clone https://github.com/Giridhar-raju/REAN_ASSESSMENT.git /tmp/assesment\n",
+          "cd /tmp/assesment\n",
+          "ansible-playbook wordpress.yml -i 'localhost,' -e 'wordpress_db_name=",{ "Ref": "DBName" }," mysql_root_password=",{ "Ref": "DBPassword" }," wordpress_version="{ "Ref": "wordpressVersion" },"' --connection local\n"
+          ]]}
+        }
       }
     },
     "IGW": {
@@ -81,7 +160,10 @@
         "DestinationCidrBlock": "0.0.0.0/0",
         "RouteTableId": { "Ref": "RouteTable" },
         "GatewayId": { "Ref": "IGW" }
-      }
+      },
+			"DependsOn": [
+				"VpcGatewayAtt"
+			]
     },
     "VpcGatewayAtt": {
       "Type": "AWS::EC2::VPCGatewayAttachment",
@@ -90,89 +172,11 @@
         "VpcId": { "Ref": "vpc" }
       }
     },
-    "Subnet": {
-      "Type": "AWS::EC2::Subnet",
-      "Properties": {
-        "VpcId": { "Ref": "vpc" },
-        "CidrBlock": "10.201.92.0/25",
-        "AvailabilityZone": "us-east-1a",
-        "Tags": [
-          {
-            "Key": "Name",
-            "Value": "East Subnet"
-          }
-        ]
-      }
-    },
     "SubnetRTBAss": {
       "Type" : "AWS::EC2::SubnetRouteTableAssociation",
       "Properties" : {
         "RouteTableId": { "Ref": "RouteTable" },
         "SubnetId": { "Ref": "Subnet" }
-      }
-    },
-    "SecurityGroup": {
-      "Type": "AWS::EC2::SecurityGroup",
-      "Properties": {
-        "GroupDescription": "Allow http and ssh connection",
-        "SecurityGroupIngress": [
-          {
-            "IpProtocol": "tcp",
-            "FromPort": "80",
-            "ToPort": "80",
-            "CidrIp": "0.0.0.0/0"
-          },
-          {
-            "IpProtocol": "tcp",
-            "FromPort": "22",
-            "ToPort": "22",
-            "CidrIp": "0.0.0.0/0"
-          }
-        ],
-        "Tags":  [
-          {
-            "Key": "Name",
-            "Value": "Assesment-Security-Group"
-          }
-        ],
-        "VpcId": { "Ref": "vpc" }
-      }
-    },
-    "ec2Instance": {
-      "Type": "AWS::EC2::Instance",
-      "Properties": {
-        "AvailabilityZone": { "Fn::GetAtt" : [ "Subnet", "AvailabilityZone" ] },
-        "ImageId": { "Ref": "imageid" },
-        "InstanceType": { "Ref": "InstanceType" },
-        "KeyName": { "Ref": "Keyname" },
-        "NetworkInterfaces": [{
-					"GroupSet": [{
-						"Ref": "SecurityGroup"
-					}],
-					"AssociatePublicIpAddress": "true",
-					"DeviceIndex": "0",
-					"DeleteOnTermination": "true",
-					"SubnetId": {
-						"Ref": "Subnet"
-					}
-				}],
-        "Tags": [
-          {
-            "Key": "Name",
-            "Value": "wordpress"
-          }
-        ],
-        "UserData": { "Fn::Base64": { "Fn::Join": [ "", [
-          "#!/bin/bash -xe\n",
-          "yum-config-manager --enable epel\n",
-          "yum update -y\n",
-          "yum install -y git ansible\n",
-          "cd /tmp\n",
-          "git clone https://github.com/Giridhar-raju/REAN_ASSESSMENT.git /tmp/assesment\n",
-          "cd /tmp/assesment\n",
-          "ansible-playbook wordpress.yml -i 'localhost,' -e 'wordpress_db_name=",{ "Ref": "DBName" }," mysql_root_password=",{ "Ref": "DBPassword" }," wordpress_version="{ "Ref": "wordpressVersion" },"' --connection local\n"
-          ]]}
-        }
       }
     }
   }
