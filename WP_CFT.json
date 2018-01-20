@@ -1,5 +1,5 @@
 {
-  "AWSTemplateFormatVersion": "2018-01-19",
+  "AWSTemplateFormatVersion": "2010-09-09",
   "Description": "Cloudformation Template to spin up EC2 instance",
   "Parameters": {
     "imageid": {
@@ -16,7 +16,8 @@
     },
     "Keyname": {
       "Description": "EC2 keypair to ssh",
-      "Type": "AWS::EC2::KeyPair::KeyName"
+      "Type": "AWS::EC2::KeyPair::KeyName",
+			"Default": "GiridharAssessment"
     },
     "DBName": {
       "Description": "Wordpress Database Name",
@@ -126,7 +127,7 @@
           "cd /tmp\n",
           "git clone https://github.com/Giridhar-raju/REAN_ASSESSMENT.git /tmp/assesment\n",
           "cd /tmp/assesment\n",
-          "ansible-playbook wordpress.yml -i 'localhost,' -e 'wordpress_db_name=",{ "Ref": "DBName" }," mysql_root_password=",{ "Ref": "DBPassword" }," wordpress_version="{ "Ref": "wordpressVersion" },"' --connection local\n"
+          "ansible-playbook wordpress.yml -i 'localhost,' -e 'wordpress_db_name=",{ "Ref": "DBName" }," mysql_root_password=",{ "Ref": "DBPassword" }," wordpress_version=",{ "Ref": "wordpressVersion" },"' --connection local\n"
           ]]}
         }
       }
